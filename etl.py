@@ -3,65 +3,134 @@ import glob
 import psycopg2
 import pandas as pd
 from sql_queries import *
+import logging
 
+logging.basicConfig(filename='etl.log', level=logging.ERROR)
 
 def process_song_file(cur, filepath):
     # open song file
-    df = pd.read_json(filepath, lines=True)
+    try:
+        df = pd.read_json(filepath, lines=True)
+    except Exception as err:
+        logging.error(f"Error reading song file {filepath}")
+        logging.exception(err)
+        return
+
+    # insert artist record
+    artist_data_columns = ['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']
+    try:
+        artist_data = df[artist_data_columns].values[0]
+    except Exception as err:
+        logging.error(f"Error retrieving artist data for {filepath}")
+        logging.exception(err)
+        return
+    try:
+        cur.execute(artist_table_insert, artist_data)
+    except Exception as err:
+        logging.error(f"Error inserting artist data for {filepath}")
+        logging.exception(err)
+        return
 
     # insert song record
     song_data_columns = ['song_id', 'title', 'artist_id', 'year', 'duration']
-    song_data = df[song_data_columns].values[0]
-    cur.execute(song_table_insert, song_data)
-    
-    # insert artist record
-    artist_data_columns = ['artist_id', 'artist_name', 'artist_location', 'artist_latitude', 'artist_longitude']
-    artist_data = df[artist_data_columns].values[0]
-    cur.execute(artist_table_insert, artist_data)
+    try:
+        song_data = df[song_data_columns].values[0]
+    except Exception as err:
+        logging.error(f"Error reading song data for {filepath}")
+        logging.exception(err)
+    try:
+        cur.execute(song_table_insert, song_data)
+    except Exception as err:
+        logging.error(f"Error inserting song data for {filepath}")
+        logging.exception(err)
+        return
 
 
 def process_log_file(cur, filepath):
     # open log file
-    df = pd.read_json(filepath, lines=True)
+    try:
+        df = pd.read_json(filepath, lines=True)
+    except Exception as err:
+        logging.error(f"Error reading log file for {filepath}")
+        logging.exception(err)
+        return
 
     # filter by NextSong action
-    df = df.loc[df['page'] == 'NextSong']
+    try:
+        df = df.loc[df['page'] == 'NextSong']
+    except Exception as err:
+        logging.error(f"Error reading the 'page' column in file {filepath}")
+        logging.exception(err)
+        return
 
     # convert timestamp column to datetime
-    t = pd.to_datetime(df['ts'], unit='ms')
+    try:
+        t = pd.to_datetime(df['ts'], unit='ms')
+    except Exception as err:
+        logging.error("Error converting the timestamp column")
+        logging.exception(err)
+        return
     
     # insert time data records
-    time_data = [t.dt.hour.to_list(), t.dt.day_of_week.to_list(), t.dt.isocalendar().week.to_list(), 
-                 t.dt.month.to_list(), t.dt.year.to_list()]
-    column_labels = ['hour', 'day_of_week', 'week', 'month', 'year']
-    time_df = pd.DataFrame(dict(zip(column_labels, time_data)))
+    try:
+        time_data = [t.dt.hour.to_list(), t.dt.day_of_week.to_list(), t.dt.isocalendar().week.to_list(), 
+                    t.dt.month.to_list(), t.dt.year.to_list()]
+        column_labels = ['hour', 'day_of_week', 'week', 'month', 'year']
+        time_df = pd.DataFrame(dict(zip(column_labels, time_data)))
+    except Exception as err:
+        logging.err(f"Error creating time dataframe for {filepath}")
+        logging.exception(err)
+        return
 
     for i, row in time_df.iterrows():
-        cur.execute(time_table_insert, list(row))
+        try:
+            cur.execute(time_table_insert, list(row))
+        except Exception as err:
+            logging.error(f"Error inserting row {i} of {filepath} time data into the time table")
+            logging.exception(err)
 
     # load user table
-    user_df = df[['userId', 'firstName', 'lastName', 'gender', 'level']]
+    try:
+        user_df = df[['userId', 'firstName', 'lastName', 'gender', 'level']]
+    except Exception as err:
+        logging.error(f"Error creating the user dataframe for {filepath}")
+        logging.exception(err)
+        return
 
     # insert user records
     for i, row in user_df.iterrows():
-        cur.execute(user_table_insert, row)
+        try:
+            cur.execute(user_table_insert, row)
+        except Exception as err:
+            logging.error(f"Error inserting row {i} of user data into user table for file {filepath}")
+            return
 
     # insert songplay records
-    for index, row in df.iterrows():
+    for i, row in df.iterrows():
         
         # get songid and artistid from song and artist tables
-        cur.execute(song_select, (row.song, row.artist, row.length))
-        results = cur.fetchone()
-        
+        try:
+            cur.execute(song_select, (row.song, row.artist, row.length))
+            results = cur.fetchone()
+        except Exception as err:
+            logging.error(f"Error performing song select for row {i} of {filepath}")
+            logging.exception(err)
+            continue
+
         if results:
             songid, artistid = results
         else:
             songid, artistid = None, None
 
         # insert songplay record
-        songplay_data = (row.ts, row.userId, row.level, songid, artistid, 
-                     row.sessionId, row.location, row.userAgent) 
-        cur.execute(songplay_table_insert, songplay_data)
+        try:
+            songplay_data = (row.ts, row.userId, row.level, songid, artistid, 
+                        row.sessionId, row.location, row.userAgent) 
+            cur.execute(songplay_table_insert, songplay_data)
+        except Exception as err:
+            logging.error(f"Error inserting songplay data for {filepath}")
+            logging.exception(err)
+            continue
 
 
 def process_data(cur, conn, filepath, func):
