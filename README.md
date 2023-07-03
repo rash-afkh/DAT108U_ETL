@@ -15,6 +15,7 @@ The project repository contains the following files:
 - `song and log files`: data files under the data folder
 - `create_tables.py`: Removes any existing tables and creates the database and the tables 
 - `etl.ipynb`: is a step-by-step implementation of the ETL for a single song file and a single log file - for testing purposes. 
+- `test.ipynb`: Sanity check for the results. Checks if data has been put into the tables. Run this after `etl.py`
 - Other necessary project files, such as additional files or scripts required for running the project.
 
 ## Getting Started

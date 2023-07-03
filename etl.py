@@ -7,7 +7,16 @@ import logging
 
 logging.basicConfig(filename='etl.log', level=logging.ERROR)
 
-def process_song_file(cur, filepath):
+def process_song_file(cur, filepath:str):
+    """
+    Reads the song files, creates Artist data and Song data and writes them into artist table and song table
+    - Inputs:
+        - cur: sql query cursor
+        - filepath: string path to a song file
+    - Outputs:
+        - None
+    """
+
     # open song file
     try:
         df = pd.read_json(filepath, lines=True)
@@ -46,7 +55,16 @@ def process_song_file(cur, filepath):
         return
 
 
-def process_log_file(cur, filepath):
+def process_log_file(cur, filepath:str):
+    """
+    Reads the log files, creates Time data, User data and Songplay data and writes them into time table, user table and songplay table
+    - Inputs:
+        - cur: sql query cursor
+        - filepath: string path to a log file
+    - Outputs:
+        - None
+    """
+        
     # open log file
     try:
         df = pd.read_json(filepath, lines=True)
@@ -133,7 +151,16 @@ def process_log_file(cur, filepath):
             continue
 
 
-def process_data(cur, conn, filepath, func):
+def process_data(cur, conn:psycopg2.connect, filepath:str, func):
+    """
+    Data processing function that will call process_song_file and process_log_file per song and log file
+    - Inputs:
+        - cur: sql cursot
+        - conn: database connection instance
+        - filepath: path to parent directory of song or log files
+        - func: data processing functon such as process_log_file and process_song_file
+    """
+
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
