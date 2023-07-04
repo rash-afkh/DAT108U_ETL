@@ -121,6 +121,7 @@ def process_log_file(cur, filepath:str):
             cur.execute(user_table_insert, row)
         except Exception as err:
             logging.error(f"Error inserting row {i} of user data into user table for file {filepath}")
+            logging.exception(err)
             return
 
     # insert songplay records
