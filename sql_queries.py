@@ -78,11 +78,7 @@ songplay_table_insert = ("""INSERT INTO songplay (timestamp, user_id, level, son
  
 user_table_insert = ("""INSERT INTO users (user_id, first_name, last_name, gender, level) 
         VALUES(%s, %s, %s, %s, %s)
-        ON CONFLICT (user_id) DO UPDATE SET 
-        first_name = EXCLUDED.first_name,
-        last_name = EXCLUDED.last_name,
-        gender = EXCLUDED.gender,
-        level = EXCLUDED.level; 
+        ON CONFLICT DO NOTHING; 
 """) 
  
 song_table_insert = ("""INSERT INTO song (song_id, title, artist_id, year, duration) 
@@ -91,11 +87,7 @@ song_table_insert = ("""INSERT INTO song (song_id, title, artist_id, year, durat
  
 artist_table_insert = ("""INSERT INTO artist (artist_id, name, location, latitude, longitude) 
         VALUES(%s, %s, %s, %s, %s)
-        ON CONFLICT (artist_id) DO UPDATE SET 
-        name = EXCLUDED.name,
-        location = EXCLUDED.location,
-        latitude = EXCLUDED.latitude,
-        longitude = EXCLUDED.longitude; 
+        ON CONFLICT DO NOTHING; 
 """) 
  
  

@@ -96,7 +96,7 @@ def process_log_file(cur, filepath:str):
         column_labels = ['hour', 'day_of_week', 'week', 'month', 'year']
         time_df = pd.DataFrame(dict(zip(column_labels, time_data)))
     except Exception as err:
-        logging.err(f"Error creating time dataframe for {filepath}")
+        logging.error(f"Error creating time dataframe for {filepath}")
         logging.exception(err)
         return
 
